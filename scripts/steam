@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+# ==============================================================================
+# File        : scripts/steam
+# Description : PATH Precedence Wrapper for Steam (Enforces Friday 19:30-21:30 Window)
+# Installation: sudo cp scripts/steam /usr/local/bin/steam && sudo chmod +x /usr/local/bin/steam
+# ==============================================================================
+
+# Gün kontrolü (%u: 1=Pazartesi, 5=Cuma, 7=Pazar)
+DAY=$(date +%u)
+
+# Saat ve dakikayı dakika cinsine çevirerek hassas kıyaslama
+HOUR=$(date +%H)
+MIN=$(date +%M)
+TOTAL_MINS=$(( 10#$HOUR * 60 + 10#$MIN ))
+
+# İzin Verilen Aralık: Cuma (5. gün) ve 19:30 (1170 dk) - 21:30 (1290 dk) arası
+START_MINS=$(( 19 * 60 + 30 )) # 1170. dakika
+END_MINS=$(( 21 * 60 + 30 ))   # 1290. dakika
+
+if [ "$DAY" -eq 5 ] && [ "$TOTAL_MINS" -ge "$START_MINS" ] && [ "$TOTAL_MINS" -le "$END_MINS" ]; then
+    echo "[Özgürlük Alanı] Cuma 19:30 - 21:30 aralığındasınız. Steam başlatılıyor..."
+    exec /usr/bin/steam "$@"
+else
+    # Terminal ve Masaüstü Bildirimi
+    echo -e "\n=================================================="
+    echo -e "🔒 STEAM İRADE KİLİDİ AKTİF"
+    echo -e "Giriş İzni: Sadece Cuma Günleri 19:30 - 21:30 arası."
+    echo -e "Şu anki Zaman: $(date '+%A %H:%M')"
+    echo -e "==================================================\n"
+    
+    if command -v notify-send &> /dev/null; then
+        notify-send -u critical "🔒 Steam İrade Kilidi" "Steam sadece Cuma 19:30 - 21:30 arasında açılabilir.\nŞu an: $(date '+%A %H:%M')" -i dialog-warning
+    fi
+    
+    exit 1
+fi
